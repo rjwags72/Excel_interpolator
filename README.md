@@ -4,8 +4,7 @@ A desktop application to interpolate tables in excel
 The file where the table is located can be inported by droping the file in. If you would like to type
 the file name in simply uncheck the box labeled "I would like to Drop in file"
 
-Choose the sheet that the table is on by typing the sheet name into the box labeled "Input Sheet Name"
-future versions should detect sheet names from the incoming .xlsx file.
+Choose the sheet that the table is on from the drop down list labeled "Input Sheet Name"
 
 The application will automaticly look for numerical data and interpolate using the first column as the 
 "x2" value in the interpolation formula "y2 = ((y3 - y1)/(x3-x1)) * (x2 - x1) + y1". y2 will be evaluated

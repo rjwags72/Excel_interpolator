@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import openpyxl
 import string
+#from PyQt5.QtWidgets import QProgressBar
 
 # =============================================================================
 # # required inpuuts 
@@ -109,8 +110,9 @@ def rename_col(DataFrame):
     return DataFrame
 
 
-def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file):
-    
+def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, 
+              same_file, QProgressBar, QLabel):
+
     #pull initial table
     try:
         table = pd.read_excel(fp, sheet_name=sn, header=None)
@@ -131,19 +133,20 @@ def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file
     
     #check for appropriate step size
     bol_test = True
-
+    
+    QProgressBar.setMaximum(len(table.index.values))
+    progress = 0
     for i in (table.index.values):
         if(i < len(table.index.values)):
-            test1 = abs((table.loc[i, col] - table.loc[i+1, col])) > \
-            abs((table.loc[i, col] + steps) - table.loc[i+1, col])
+            test1 = table.loc[i+1, col] > (table.loc[i, col] + steps)
         if(test1==False):
             bol_test = False
     if(bol_test==False):
         return 'Inappropriate step size'
-    
     #interpolate
-
     for i in (table.index.values):
+        progress = progress + 1
+        QProgressBar.setValue(progress)
         x1 = table.loc[i,col]
         x2 = x1 + steps
         if(i == first_row-1):
@@ -159,7 +162,7 @@ def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file
                 x3 = x2
                 current_row = current_row + 1
                 n_table.loc[current_row, :] = table.loc[i, :]
-        while(abs(round(x2 - x3,5))>0):
+        while(round(x2 - x3,5) < 0):
             current_row = current_row + 1
             n_table.loc[current_row , col] = x2
             for o in table.columns.values:
@@ -171,14 +174,17 @@ def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file
 
             x2 = x2 + steps
     
+    QLabel.setText('Saving Table')
+    QLabel.move(10, 875)
+    QLabel.show()
     if(same_file==True):
         wb = openpyxl.load_workbook(fp)
         if(same_sheet==True):
             work_sheet = wb[sn]
-            for i in n_table.columns.values:
-                col = str(i)
-                for o in n_table.index.values:
-                    row = str(o)
+            for o in n_table.index.values:
+                row = str(o)
+                for i in n_table.columns.values:
+                    col = str(i)
                     cell = col + row
                     work_sheet[cell] = n_table.loc[o, i]
 
@@ -190,10 +196,10 @@ def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file
             except KeyError:
                 wb.create_sheet(sn2)
                 work_sheet = wb[sn2]
-            for i in (n_table.columns.values):
-                col = str(i)
-                for o in n_table.index.values:
-                    row = str(o)
+            for o in n_table.index.values:
+                row = str(o)
+                for i in n_table.columns.values:
+                    col = str(i)
                     cell = col + row
                     work_sheet[cell] = n_table.loc[o, i]
 
@@ -207,10 +213,10 @@ def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file
         if(same_sheet==True):
             wb.create_sheet(sn)
             work_sheet = wb[sn]
-            for i in (n_table.columns.values):
-                col = str(i)
-                for o in n_table.index.values:
-                    row = str(o)
+            for o in n_table.index.values:
+                row = str(o)
+                for i in n_table.columns.values:
+                    col = str(i)
                     cell = col + row
                     work_sheet[cell] = n_table.loc[o, i]
 
@@ -222,10 +228,10 @@ def int_table(fp, sn, steps, col_to_interp_from, fp2, sn2, same_sheet, same_file
             except KeyError:
                 wb.create_sheet(sn2)
                 work_sheet = wb[sn2]
-            for i in (n_table.columns.values):
-                col = str(i)
-                for o in n_table.index.values:
-                    row = str(o)
+            for o in n_table.index.values:
+                row = str(o)
+                for i in n_table.columns.values:
+                    col = str(i)
                     cell = col + row
                     work_sheet[cell] = n_table.loc[o, i]
             wb.save(fp2)

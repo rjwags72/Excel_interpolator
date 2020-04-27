@@ -1,8 +1,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QMessageBox
-from PyQt5.QtWidgets import QCheckBox, QLabel
+from PyQt5.QtWidgets import QCheckBox, QLabel, QComboBox, QProgressBar
 from Interpolation import int_table
+from find_sheets import find_sheets
 from PyQt5.QtCore import pyqtSlot, Qt
+
 #from pyqtspinner.spinner import WaitingSpinner as spin
 #import os.path
 
@@ -39,14 +41,13 @@ class App(QWidget):
         
         #create textinput for input Sheet_name box & title
         self.sheet_name_label = QLabel(self)
-        self.sheet_name_label.setText('Input Sheet Name')
+        self.sheet_name_label.setText('Choose Sheet Name')
         #self.file_path_label.resize(400,200)
         self.sheet_name_label.move(10,600)
-        self.sheet_name = QLineEdit('Sheet1', self)
-        self.sheet_name.setDragEnabled(True)
+        self.sheet_name = QComboBox(self)
         self.sheet_name.move(10, 620)
         self.sheet_name.resize(500,32)
-        self.sheet_name.textChanged.connect(self.set_out_to_in_sheet)
+        self.sheet_name.activated[str].connect(self.set_out_to_in_sheet)
         
         #create check box to decide wether to drop or type
         self.input_type = QCheckBox("I would like to Drop in file",self)
@@ -75,7 +76,8 @@ class App(QWidget):
         self.out_sheet_name_label = QLabel(self)
         self.out_sheet_name_label.setText('Output Sheet Name')
         self.out_sheet_name_label.move(10,740)
-        self.out_sheet_name = QLineEdit(self.sheet_name.text(), self)
+        #self.out_sheet_name = QLineEdit(self.sheet_name.text(), self)
+        self.out_sheet_name = QLineEdit( self)
         self.out_sheet_name.setDragEnabled(True)
         self.out_sheet_name.move(10, 765)
         self.out_sheet_name.resize(500,32)
@@ -136,13 +138,9 @@ class App(QWidget):
         
     @pyqtSlot()
     def on_click(self):
-        msgBox = QMessageBox()
-        msgBox.setText('Interpolating')
-        msgBox.setWindowTitle("Status")
-        msgBox.setIcon(QMessageBox.Information)
-        msgBox.show()
+
         file_path = self.file_path.text()
-        sheet_name_read = self.sheet_name.text()
+        sheet_name_read = str(self.sheet_name.currentText())
         steps = self.step.text()
         steps = float(steps)
         col_to_int = self.col.text()
@@ -150,13 +148,20 @@ class App(QWidget):
         same_sheet = self.out_sheet.isChecked()
         file_path_out = self.out_file_path.text()
         sheet_name_write = self.out_sheet_name.text()
+        self.pbar = QProgressBar(self)
+        self.pbar.setGeometry(10, 850, 300, 25)
+        self.pbar.show()
+        self.saving_ind = QLabel(self)
         status = int_table(file_path, sheet_name_read, steps, col_to_int,
-                             file_path_out, sheet_name_write, same_sheet, same_file)
-
-        msgBox.setText(str(status))
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        msgBox.show()
-        msgBox.exec_()
+                             file_path_out, sheet_name_write, same_sheet, 
+                             same_file, self.pbar, self.saving_ind)
+        msg_complete = QMessageBox()
+        msg_complete.setText(str(status))
+        msg_complete.setStandardButtons(QMessageBox.Ok)
+        msg_complete.show()
+        msg_complete.exec_()
+        self.saving_ind.hide()
+        self.pbar.hide()
         
 #int_table(fp,sn,steps,col_to_interp_from,fp2,sn2,same_sheet,same_file)
         
@@ -182,13 +187,13 @@ class App(QWidget):
     
     def set_out_to_in_sheet(self):
         if(self.out_sheet.isChecked() == True):
-            self.out_sheet_name.setText(self.sheet_name.text())
+            self.out_sheet_name.setText(str(self.sheet_name.currentText()))
             
     def same_out_sheet(self):
         self.out_sheet_name.status = not(self.out_sheet_name.status)
         self.out_sheet_name.setDisabled(self.out_sheet_name.status)
         if(self.out_sheet_name.status == True):
-            self.out_sheet_name.setText(self.sheet_name.text())
+            self.out_sheet_name.setText(str(self.sheet_name.currentText()))
         else:
             self.out_sheet_name.setText('Output Sheet Name')
             
@@ -224,6 +229,15 @@ class droparea(QLabel):
         txt = txt.strip('file:///')
         ex.file_path.setText(txt)
 
+        for i in range(0, ex.sheet_name.count()):
+            ex.sheet_name.removeItem(i)
+        ex.sheet_name.clear()
+        
+        sheets = find_sheets(txt)
+        for i in sheets:
+            ex.sheet_name.addItem(i)
+        if (ex.out_sheet.isChecked() == True):
+            ex.out_sheet_name.setText(str(ex.sheet_name.currentText()))
 
 
 if __name__ == '__main__':
